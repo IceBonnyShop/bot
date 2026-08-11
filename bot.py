@@ -13,36 +13,115 @@ bot = telebot.TeleBot(BOT_TOKEN)
 
 
 # ==============================
+# СОСТОЯНИЕ МОДЕРАЦИИ
+# ==============================
+
+moderation_settings = {
+    "links": False,
+    "words": False,
+    "antispam": False,
+    "warnings": True
+}
+
+
+# ==============================
 # ГЛАВНОЕ МЕНЮ
 # ==============================
 
 def main_menu():
+
     markup = types.InlineKeyboardMarkup(row_width=2)
 
-    moderation_btn = types.InlineKeyboardButton(
-        "🛡️ Модерация",
-        callback_data="moderation"
+    markup.add(
+        types.InlineKeyboardButton(
+            "🛡️ Модерация",
+            callback_data="moderation"
+        ),
+        types.InlineKeyboardButton(
+            "⚙️ Настройки",
+            callback_data="settings"
+        )
     )
 
-    settings_btn = types.InlineKeyboardButton(
-        "⚙️ Настройки",
-        callback_data="settings"
+    markup.add(
+        types.InlineKeyboardButton(
+            "📋 Журнал",
+            callback_data="logs"
+        ),
+        types.InlineKeyboardButton(
+            "❓ Помощь",
+            callback_data="help"
+        )
     )
-
-    logs_btn = types.InlineKeyboardButton(
-        "📋 Журнал",
-        callback_data="logs"
-    )
-
-    help_btn = types.InlineKeyboardButton(
-        "❓ Помощь",
-        callback_data="help"
-    )
-
-    markup.add(moderation_btn, settings_btn)
-    markup.add(logs_btn, help_btn)
 
     return markup
+
+
+# ==============================
+# МЕНЮ МОДЕРАЦИИ
+# ==============================
+
+def moderation_menu():
+
+    markup = types.InlineKeyboardMarkup(row_width=2)
+
+    links_status = "✅" if moderation_settings["links"] else "❌"
+    words_status = "✅" if moderation_settings["words"] else "❌"
+    antispam_status = "✅" if moderation_settings["antispam"] else "❌"
+    warnings_status = "✅" if moderation_settings["warnings"] else "❌"
+
+    markup.add(
+        types.InlineKeyboardButton(
+            f"🔗 Ссылки {links_status}",
+            callback_data="toggle_links"
+        ),
+        types.InlineKeyboardButton(
+            f"🚫 Слова {words_status}",
+            callback_data="toggle_words"
+        )
+    )
+
+    markup.add(
+        types.InlineKeyboardButton(
+            f"🤖 Антиспам {antispam_status}",
+            callback_data="toggle_antispam"
+        ),
+        types.InlineKeyboardButton(
+            f"⚠️ Предупреждения {warnings_status}",
+            callback_data="toggle_warnings"
+        )
+    )
+
+    markup.add(
+        types.InlineKeyboardButton(
+            "🔙 Назад",
+            callback_data="back"
+        )
+    )
+
+    return markup
+
+
+# ==============================
+# ТЕКСТ МОДЕРАЦИИ
+# ==============================
+
+def moderation_text():
+
+    links_status = "✅" if moderation_settings["links"] else "❌"
+    words_status = "✅" if moderation_settings["words"] else "❌"
+    antispam_status = "✅" if moderation_settings["antispam"] else "❌"
+    warnings_status = "✅" if moderation_settings["warnings"] else "❌"
+
+    return (
+        "🛡️ <b>Модерация</b>\n\n"
+        "Здесь находятся основные функции защиты группы.\n\n"
+        f"🔗 Защита ссылок — {links_status}\n"
+        f"🚫 Фильтр слов — {words_status}\n"
+        f"🤖 Антиспам — {antispam_status}\n"
+        f"⚠️ Предупреждения — {warnings_status}\n\n"
+        "👇 <b>Нажми на функцию, чтобы включить или выключить её:</b>"
+    )
 
 
 # ==============================
@@ -50,6 +129,7 @@ def main_menu():
 # ==============================
 
 def back_button():
+
     markup = types.InlineKeyboardMarkup()
 
     markup.add(
@@ -92,75 +172,131 @@ def start(message):
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
 
-    # --------------------------
+    # ==========================
     # МОДЕРАЦИЯ
-    # --------------------------
+    # ==========================
 
     if call.data == "moderation":
 
-        text = (
-            "🛡️ <b>Модерация</b>\n\n"
-            "Здесь находятся основные функции защиты группы.\n\n"
-            "🔗 Защита ссылок — ❌\n"
-            "🚫 Фильтр слов — ❌\n"
-            "🤖 Антиспам — ❌\n"
-            "⚠️ Предупреждения — ✅\n\n"
-            "Выбери функцию:"
-        )
-
-        markup = types.InlineKeyboardMarkup(row_width=2)
-
-        markup.add(
-            types.InlineKeyboardButton(
-                "🔗 Ссылки",
-                callback_data="links"
-            ),
-            types.InlineKeyboardButton(
-                "🚫 Слова",
-                callback_data="words"
-            )
-        )
-
-        markup.add(
-            types.InlineKeyboardButton(
-                "🤖 Антиспам",
-                callback_data="antispam"
-            ),
-            types.InlineKeyboardButton(
-                "⚠️ Предупреждения",
-                callback_data="warnings"
-            )
-        )
-
-        markup.add(
-            types.InlineKeyboardButton(
-                "🔙 Назад",
-                callback_data="back"
-            )
-        )
-
         bot.edit_message_text(
-            text,
+            moderation_text(),
             call.message.chat.id,
             call.message.message_id,
             parse_mode="HTML",
-            reply_markup=markup
+            reply_markup=moderation_menu()
+        )
+
+        bot.answer_callback_query(call.id)
+
+
+    # ==========================
+    # ССЫЛКИ
+    # ==========================
+
+    elif call.data == "toggle_links":
+
+        moderation_settings["links"] = not moderation_settings["links"]
+
+        bot.edit_message_text(
+            moderation_text(),
+            call.message.chat.id,
+            call.message.message_id,
+            parse_mode="HTML",
+            reply_markup=moderation_menu()
+        )
+
+        status = "включена ✅" if moderation_settings["links"] else "выключена ❌"
+
+        bot.answer_callback_query(
+            call.id,
+            f"🔗 Защита ссылок {status}"
         )
 
 
-    # --------------------------
+    # ==========================
+    # СЛОВА
+    # ==========================
+
+    elif call.data == "toggle_words":
+
+        moderation_settings["words"] = not moderation_settings["words"]
+
+        bot.edit_message_text(
+            moderation_text(),
+            call.message.chat.id,
+            call.message.message_id,
+            parse_mode="HTML",
+            reply_markup=moderation_menu()
+        )
+
+        status = "включён" if moderation_settings["words"] else "выключен"
+
+        bot.answer_callback_query(
+            call.id,
+            f"🚫 Фильтр слов {status}"
+        )
+
+
+    # ==========================
+    # АНТИСПАМ
+    # ==========================
+
+    elif call.data == "toggle_antispam":
+
+        moderation_settings["antispam"] = not moderation_settings["antispam"]
+
+        bot.edit_message_text(
+            moderation_text(),
+            call.message.chat.id,
+            call.message.message_id,
+            parse_mode="HTML",
+            reply_markup=moderation_menu()
+        )
+
+        status = "включён" if moderation_settings["antispam"] else "выключен"
+
+        bot.answer_callback_query(
+            call.id,
+            f"🤖 Антиспам {status}"
+        )
+
+
+    # ==========================
+    # ПРЕДУПРЕЖДЕНИЯ
+    # ==========================
+
+    elif call.data == "toggle_warnings":
+
+        moderation_settings["warnings"] = not moderation_settings["warnings"]
+
+        bot.edit_message_text(
+            moderation_text(),
+            call.message.chat.id,
+            call.message.message_id,
+            parse_mode="HTML",
+            reply_markup=moderation_menu()
+        )
+
+        status = "включены" if moderation_settings["warnings"] else "выключены"
+
+        bot.answer_callback_query(
+            call.id,
+            f"⚠️ Предупреждения {status}"
+        )
+
+
+    # ==========================
     # НАСТРОЙКИ
-    # --------------------------
+    # ==========================
 
     elif call.data == "settings":
 
         text = (
             "⚙️ <b>Настройки</b>\n\n"
-            "Здесь будут находиться настройки ChatShield.\n\n"
-            "🔗 Ссылки: ❌\n"
-            "🚫 Фильтр слов: ❌\n"
-            "🤖 Антиспам: ❌\n"
-            "⚠️ Предупреждения: ✅"
+            "Настройки ChatShield находятся "
+            "в разделе 🛡️ Модерация.\n\n"
+            "Там можно включать и выключать "
+            "функции защиты."
         )
 
         bot.edit_message_text(
@@ -171,18 +307,20 @@ def callback_handler(call):
             reply_markup=back_button()
         )
 
+        bot.answer_callback_query(call.id)
 
-    # --------------------------
+
+    # ==========================
     # ЖУРНАЛ
-    # --------------------------
+    # ==========================
 
     elif call.data == "logs":
 
         text = (
             "📋 <b>Журнал модерации</b>\n\n"
             "Пока здесь нет действий.\n\n"
-            "Когда бот начнёт модерировать группу, "
-            "здесь будут отображаться его действия."
+            "После подключения настоящей модерации "
+            "здесь будут отображаться действия бота."
         )
 
         bot.edit_message_text(
@@ -193,17 +331,19 @@ def callback_handler(call):
             reply_markup=back_button()
         )
 
+        bot.answer_callback_query(call.id)
 
-    # --------------------------
+
+    # ==========================
     # ПОМОЩЬ
-    # --------------------------
+    # ==========================
 
     elif call.data == "help":
 
         text = (
             "❓ <b>Помощь</b>\n\n"
             "Нужна помощь с настройкой ChatShield?\n\n"
-            "В нашей инструкции подробно объясняется:\n"
+            "В инструкции подробно объясняется:\n"
             "• как добавить бота в группу;\n"
             "• какие права выдать боту;\n"
             "• как настроить модерацию;\n"
@@ -234,10 +374,12 @@ def callback_handler(call):
             reply_markup=markup
         )
 
+        bot.answer_callback_query(call.id)
 
-    # --------------------------
+
+    # ==========================
     # НАЗАД
-    # --------------------------
+    # ==========================
 
     elif call.data == "back":
 
@@ -255,45 +397,7 @@ def callback_handler(call):
             reply_markup=main_menu()
         )
 
-
-    # --------------------------
-    # ФУНКЦИИ МОДЕРАЦИИ
-    # --------------------------
-
-    elif call.data == "links":
-
-        bot.answer_callback_query(
-            call.id,
-            "🔗 Защиту ссылок подключим следующим шагом!"
-        )
-
-
-    elif call.data == "words":
-
-        bot.answer_callback_query(
-            call.id,
-            "🚫 Фильтр слов подключим следующим шагом!"
-        )
-
-
-    elif call.data == "antispam":
-
-        bot.answer_callback_query(
-            call.id,
-            "🤖 Антиспам подключим следующим шагом!"
-        )
-
-
-    elif call.data == "warnings":
-
-        bot.answer_callback_query(
-            call.id,
-            "⚠️ Систему предупреждений подключим следующим шагом!"
-        )
-
-
-    # Убираем часики загрузки после нажатия
-    bot.answer_callback_query(call.id)
+        bot.answer_callback_query(call.id)
 
 
 # ==============================
