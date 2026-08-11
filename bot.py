@@ -7,6 +7,8 @@ from telebot import types
 
 BOT_TOKEN = "8626947639:AAGBTUyULQV9y1Rv2-FPVfnQlgvhnzpGKcQ"
 
+FAQ_URL = "https://icebonnyshop.github.io/bot/faq.html"
+
 bot = telebot.TeleBot(BOT_TOKEN)
 
 
